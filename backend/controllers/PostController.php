@@ -5,8 +5,10 @@ namespace backend\controllers;
 use common\models\AccessToken;
 use common\models\ApiResponse;
 use common\models\Post;
+use common\models\PostSearch;
 use Throwable;
 use yii\db\StaleObjectException;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -22,58 +24,43 @@ class PostController extends Controller
     /**
      * @inheritDoc
      */
-    public function behaviors(): array
+    public function behaviors()
     {
-        $behaviors = parent::behaviors();
-        $behaviors['contentNegotiator'] = [
-            'class' => 'yii\filters\ContentNegotiator',
-            'formats' => [
-                'application/json' => Response::FORMAT_JSON,
+        return array_merge(
+            parent::behaviors(),
+            [
+                'verbs' => [
+                    'class' => VerbFilter::className(),
+                    'actions' => [
+                        'delete' => ['POST'],
+                    ],
+                ],
             ]
-        ];
-
-//        $behaviors['access'] = [
-//            'class' => AccessControl::class,
-//            'only' => ['create', 'update'],
-//            'rules' => [
-//                // allow authenticated users
-//                [
-//                    'allow' => true,
-//                    'roles' => ['@'],
-//                ],
-//                // everything else is denied by default
-//            ],
-//        ];
-        return $behaviors;
+        );
     }
 
-    public function actionIndex(): ApiResponse
+    public function actionIndex()
     {
-        $response = new ApiResponse();
+        $searchModel = new PostSearch();
+        $dataProvider = $searchModel->search($this->request->queryParams);
 
-        $accessToken = \Yii::$app->request->get("accessToken");
-        if ($accessToken == null) {
-            $response->setSuccess(false);
-            $response->setMessage("accessToken not found");
-            return $response;
-        }
-
-        $user = AccessToken::find()->where(["accessToken" => $accessToken])->one();
-        if ($user == null) {
-            $response->setSuccess(false);
-            $response->setMessage("Invalid accessToken");
-            return $response;
-        }
-
-        $posts = Post::find()->all();
-        $response->setData($posts);
-        $response->setSuccess(true);
-        return $response;
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
     }
 
-    public function actionView($id): ?Post
+    /**
+     * Displays a single Post model.
+     * @param int $postId
+     * @return string
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionView($postId)
     {
-        return Post::findOne($id);
+        return $this->render('view', [
+            'model' => $this->findModel($postId),
+        ]);
     }
 
     /**
