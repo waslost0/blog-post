@@ -4,22 +4,30 @@ namespace common\models;
 
 class ApiResponse
 {
-    public bool $success;
-    public string $message;
+    public bool $success = true;
+    public ?string $errorMessage = null;
     public $data;
 
-    function setSuccess($par)
+    public function serialize(): array
     {
-        $this->success = $par;
+        $data = [];
+        $data["success"] = $this->success;
+        if ($this->errorMessage != null) {
+            $data["success"] = false;
+            $data["error"] = $this->errorMessage;
+        } else {
+            $data["data"] = $this->data;
+        }
+        return $data;
     }
 
-    function setMessage($par)
-    {
-        $this->message = $par;
+    public function addError(String $message) {
+        $this->errorMessage = $message;
+        $this->success = false;
     }
 
-    function setData($par)
-    {
-        $this->data = $par;
+    public function setData($data) {
+        $this->data = $data;
+        $this->success = true;
     }
 }

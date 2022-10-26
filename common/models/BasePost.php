@@ -11,6 +11,8 @@ use Yii;
  * @property int $userId
  * @property string $title
  * @property string|null $content
+ * @property int|null $createdAt
+ * @property int|null $updatedAt
  *
  * @property User $user
  */
@@ -31,7 +33,7 @@ class BasePost extends \yii\db\ActiveRecord
     {
         return [
             [['userId', 'title'], 'required'],
-            [['userId'], 'integer'],
+            [['userId', 'createdAt', 'updatedAt'], 'integer'],
             [['content'], 'string'],
             [['title'], 'string', 'max' => 255],
             [['userId'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['userId' => 'userid']],
@@ -48,6 +50,8 @@ class BasePost extends \yii\db\ActiveRecord
             'userId' => 'User ID',
             'title' => 'Title',
             'content' => 'Content',
+            'createdAt' => 'Created At',
+            'updatedAt' => 'Updated At',
         ];
     }
 

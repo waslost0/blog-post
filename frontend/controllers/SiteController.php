@@ -14,6 +14,7 @@ use common\models\LoginForm;
 use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
+use yii\helpers\Url;
 use frontend\models\ContactForm;
 
 /**
@@ -24,7 +25,7 @@ class SiteController extends Controller
     /**
      * {@inheritdoc}
      */
-    public function behaviors()
+    public function behaviors(): array
     {
         return [
             'access' => [
@@ -55,9 +56,21 @@ class SiteController extends Controller
     /**
      * {@inheritdoc}
      */
-    public function actions()
+    public function actions(): array
     {
         return [
+            'docs' => [
+                'class' => 'yii2mod\swagger\SwaggerUIRenderer',
+                'restUrl' => Url::to(['assets/swagger.json']),
+            ],
+            'json-schema' => [
+                'class' => 'yii2mod\swagger\OpenAPIRenderer',
+                // Тhe list of directories that contains the swagger annotations.
+                'scanDir' => [
+                    Yii::getAlias('@frontend/controllers'),
+                    Yii::getAlias('@common/models'),
+                ],
+            ],
             'error' => [
                 'class' => \yii\web\ErrorAction::class,
             ],
@@ -217,8 +230,8 @@ class SiteController extends Controller
      * Verify email address
      *
      * @param string $token
-     * @throws BadRequestHttpException
      * @return yii\web\Response
+     * @throws BadRequestHttpException
      */
     public function actionVerifyEmail($token)
     {
