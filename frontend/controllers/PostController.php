@@ -41,6 +41,22 @@ class PostController extends BaseController
      * @param int $offset
      * @return array
      * @throws MethodNotAllowedHttpException
+     * @SWG\Get(path="/post",
+     *     tags={"Post"},
+     *     summary="Get full post list",
+     *     @SWG\Parameter(
+     *         name="accessToken",
+     *         in="path",
+     *         description="User access token",
+     *         required=true,
+     *         type="string",
+     *     ),
+     *     @SWG\Response(
+     *         response = 200,
+     *         description = "Post collection response",
+     *         @SWG\Schema(ref="#common\models\Post"),
+     *     )
+     * )
      */
     public function actionIndex(int $offset = 0): array
     {
@@ -68,6 +84,11 @@ class PostController extends BaseController
      */
     public function actionView(int $postId): array
     {
+        $tokenResponse = $this->checkToken();
+        if (!$tokenResponse->success) {
+            return $tokenResponse->serialize();
+        }
+
         $request = \Yii::$app->request;
         $response = new ApiResponse();
 
@@ -86,6 +107,39 @@ class PostController extends BaseController
      * @return array
      * @throws MethodNotAllowedHttpException
      * @throws ServerErrorHttpException|NotFoundHttpException
+     * @SWG\Post(path="/create",
+     *     tags={"Post"},
+     *     summary="Create new post",
+     *     @SWG\Parameter(
+     *         name="accessToken",
+     *         in="body",
+     *         description="User access token",
+     *         required=true,
+     *         type="string",
+     *     ),
+     *     @SWG\Parameter(
+     *         name="title",
+     *         in="body",
+     *         description="Post title",
+     *         required=true,
+     *         type="string",
+     *     ),
+     *      @SWG\Parameter(
+     *         name="text",
+     *         in="body",
+     *         description="Post text",
+     *         required=true,
+     *         type="string",
+     *     ),
+     *     @SWG\Response(
+     *         response = 200,
+     *         description = "Post created response",
+     *        @SWG\Schema(
+     *             type="array",
+     *             @SWG\Items(ref = "#common\models\Post")
+     *         ),
+     *     )
+     * )
      */
     public function actionCreate(): array
     {
