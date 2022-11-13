@@ -17,13 +17,13 @@ class BaseController extends Controller
         $response = new ApiResponse();
         $response->success = true;
         $accessToken = \Yii::$app->request->get("accessToken");
-        if ($accessToken == null) {
+        if (empty($accessToken)) {
             $response->success = false;
             $response->errorMessage = "accessToken not found";
             return $response;
         }
 
-        $user = AccessToken::find()->where(["accessToken" => $accessToken])->one();
+        $user = User::findIdentityByAccessToken($accessToken);
 
         if ($user == null) {
             $response->addError("Invalid accessToken");
