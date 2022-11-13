@@ -54,24 +54,24 @@ class LoginController extends BaseController
         $password = $request->post('password');
 
         if ($password == null || $username == null) {
-            $response->addError('User name and password must be not empty');
+            $response->setError('User name and password must be not empty');
             return $response->serialize();
         }
 
         $user = User::findOne(['username' => $username]);
 
         if ($user == null) {
-            $response->addError('User not found');
+            $response->setError('User not found');
             return $response->serialize();
         }
         if (!$user->validatePassword($password)) {
-            $response->addError('Invalid password');
+            $response->setError('Invalid password');
             return $response->serialize();
         }
 
         $accessToken = $this->createAccessToken($user->userId);
         $accessToken->save();
-        $response->data = ['accessToken' => $accessToken->accessToken];
+        $response->setData(['accessToken' => $accessToken->accessToken]);
 
         return $response->serialize();
     }

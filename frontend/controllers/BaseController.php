@@ -2,7 +2,6 @@
 
 namespace frontend\controllers;
 
-use common\models\AccessToken;
 use common\models\ApiResponse;
 use common\models\User;
 use yii\web\Controller;
@@ -19,14 +18,14 @@ class BaseController extends Controller
         $accessToken = \Yii::$app->request->get("accessToken");
         if (empty($accessToken)) {
             $response->success = false;
-            $response->errorMessage = "accessToken not found";
+            $response->setError("accessToken not found");
             return $response;
         }
 
         $user = User::findIdentityByAccessToken($accessToken);
 
         if ($user == null) {
-            $response->addError("Invalid accessToken");
+            $response->setError("Invalid accessToken");
             return $response;
         }
         return $response;
@@ -37,9 +36,9 @@ class BaseController extends Controller
         $exception = \Yii::$app->errorHandler->exception;
         $response = new ApiResponse();
         if ($exception !== null) {
-            $response->errorMessage = $exception->getMessage();
+            $response->setError($exception->getMessage());
         } else {
-            $response->errorMessage = "Unknown error occurred";
+            $response->setError("Unknown error occurred");
         }
         return $response->serialize();
     }

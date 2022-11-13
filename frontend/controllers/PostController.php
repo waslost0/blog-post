@@ -25,6 +25,7 @@ use yii\web\ServerErrorHttpException;
 class PostController extends BaseController
 {
     public $enableCsrfValidation = false;
+    public string $modelClass = Post::class;
 
     public function behaviors(): array
     {
@@ -54,7 +55,7 @@ class PostController extends BaseController
         }
 
         $posts = $this->getPostsByOffset($offset);
-        $response->data = $posts;
+        $response->setData($posts);
 
         if ($request->isGet) {
             return $response->serialize();
@@ -78,10 +79,10 @@ class PostController extends BaseController
         $request = \Yii::$app->request;
         $response = new ApiResponse();
 
-        $query = Post::findOne($postId);
+        $post = Post::findOne($postId);
 
         if ($request->isGet) {
-            $response->data = $query->serialize();
+            $response->setData($post->serialize());
             return $response->serialize();
         } else {
             // TODO: customize response with Exception as ApiResponse
@@ -139,12 +140,12 @@ class PostController extends BaseController
         $content = $request->post('content');
 
         if (empty($title)) {
-            $response->errorMessage = "title can not be empty";
+            $response->setError("title can not be empty");
             return $response->serialize();
         }
 
         if (empty($content)) {
-            $response->errorMessage = "content can not be empty";
+            $response->setError("content can not be empty");
             return $response->serialize();
         }
         $user = $this->findUserFromRequest($request->get('accessToken'));
@@ -155,11 +156,10 @@ class PostController extends BaseController
         $post->userId = $user->userId;
 
         if (!$post->save()) {
-            $response->addError('Unable to save post: ' . var_export($post->getErrors(), true));
+            $response->setError('Unable to save post: ' . var_export($post->getErrors(), true));
             return $response->serialize();
         }
-        $response->success = true;
-        $response->data = $post;
+        $response->setData($post);
         return $response->serialize();
     }
 
@@ -182,7 +182,7 @@ class PostController extends BaseController
 
         $postId = $request->post('postId');
         if (empty($postId)) {
-            $response->addError("postId can not be null");
+            $response->setError("postId can not be null");
             return $response->serialize();
         }
 
@@ -190,19 +190,19 @@ class PostController extends BaseController
         $user = User::findIdentityByAccessToken($accessToken);
 
         if (empty($user)) {
-            $response->addError('User not found');
+            $response->setError('User not found');
             return $response->serialize();
         }
 
         $post = Post::findOne(['postId' => $postId, 'userId' => $user->userId]);
 
         if (empty($post)) {
-            $response->addError("Post not found");
+            $response->setError("Post not found");
             return $response->serialize();
         }
 
         if (!$post->delete()) {
-            $response->addError('Unable to delete post:' . var_export($post->getErrors(), true));
+            $response->setError('Unable to delete post:' . var_export($post->getErrors(), true));
             return $response->serialize();
         }
 
