@@ -5,8 +5,6 @@ namespace frontend\controllers;
 use common\models\ApiResponse;
 use common\models\User;
 use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\web\ServerErrorHttpException;
 
 class BaseController extends Controller
 {
@@ -15,20 +13,30 @@ class BaseController extends Controller
     {
         $response = new ApiResponse();
         $response->success = true;
-        $accessToken = \Yii::$app->request->get("accessToken");
+        $accessToken = $this->getTokenFromRequest();
+
         if (empty($accessToken)) {
-            $response->success = false;
             $response->setError("accessToken not found");
             return $response;
         }
 
         $user = User::findIdentityByAccessToken($accessToken);
 
-        if ($user == null) {
-            $response->setError("Invalid accessToken");
+        if (empty($user)) {
+            $response->setError("User not found");
             return $response;
         }
         return $response;
+    }
+
+    public function getTokenFromRequest(): String
+    {
+        $request = \Yii::$app->request;
+        $token = $request->get("accessToken");
+        if (!empty($token)) {
+            return $token;
+        }
+        return $request->post("accessToken");
     }
 
     public function actionError(): array
@@ -42,24 +50,4 @@ class BaseController extends Controller
         }
         return $response->serialize();
     }
-
-    /**
-     * @throws NotFoundHttpException
-     * @throws ServerErrorHttpException
-     */
-    public function findUserFromRequest($accessToken)
-    {
-        if (empty($accessToken)) {
-            throw new ServerErrorHttpException('AccessToken should not be empty');
-        }
-
-        $foundUser = User::findIdentityByAccessToken($accessToken);
-
-        if (empty($foundUser)) {
-            throw new NotFoundHttpException('User not found');
-        }
-
-        return $foundUser;
-    }
-
 }

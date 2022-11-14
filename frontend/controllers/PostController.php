@@ -135,7 +135,6 @@ class PostController extends BaseController
             return $tokenResponse->serialize();
         }
 
-
         $title = $request->post('title');
         $content = $request->post('content');
 
@@ -148,7 +147,8 @@ class PostController extends BaseController
             $response->setError("content can not be empty");
             return $response->serialize();
         }
-        $user = $this->findUserFromRequest($request->get('accessToken'));
+
+        $user = User::findIdentityByAccessToken($this->getTokenFromRequest());
 
         $post = new Post();
         $post->title = $title;
@@ -213,7 +213,9 @@ class PostController extends BaseController
     private function getPostsByOffset($offset = 0): array
     {
         $posts = [];
-        $query = Post::find()->limit(10)->offset($offset);
+        $query = Post::find()
+            ->limit(10)
+            ->offset($offset);
         foreach ($query->each() as $post) {
             $posts[] = $post->serialize();
         }
