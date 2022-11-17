@@ -1,6 +1,7 @@
 <?php
 
 namespace frontend\controllers;
+use frontend\models\post\CreatePostForm;
 
 use yii\web\Controller;
 

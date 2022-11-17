@@ -6,8 +6,10 @@ namespace frontend\controllers;
 use common\models\ApiResponse;
 use common\models\Post;
 use common\models\User;
+use frontend\models\post\CreatePostForm;
 use Throwable;
 use yii\db\StaleObjectException;
+use yii\web\Controller;
 use yii\web\MethodNotAllowedHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -22,14 +24,20 @@ use yii\web\ServerErrorHttpException;
  *     @SWG\Info(version="1.0", title="Simple API"),
  * )
  */
-class PostController extends BaseController
+class PostController extends Controller
 {
+    public function init()
+    {
+        $module = \Yii::$app->getModule('api');
+        $module->init();
+        parent::init();
+    }
+
     public $enableCsrfValidation = false;
     public string $modelClass = Post::class;
 
     public function behaviors(): array
     {
-        $behaviors = parent::behaviors();
         $behaviors['contentNegotiator'] = [
             'class' => 'yii\filters\ContentNegotiator',
             'formats' => [
@@ -114,6 +122,7 @@ class PostController extends BaseController
     public function actionDelete(): array
     {
         $request = \Yii::$app->request;
+
         if ($request->isPost) {
             return $this->deletePost($request);
         } else {
@@ -123,44 +132,21 @@ class PostController extends BaseController
 
 
     /**
-     * @throws NotFoundHttpException
-     * @throws ServerErrorHttpException
+     * @param $request
+     * @return array
      */
     private function createPost($request): array
     {
-        $response = new ApiResponse();
+        $model = new CreatePostForm();
+        $model->load(\Yii::$app->request->post(), '');
+        $apiResponse = new ApiResponse();
 
-        $tokenResponse = $this->checkToken();
-        if (!$tokenResponse->success) {
-            return $tokenResponse->serialize();
+        if ($model->createPost()) {
+            $apiResponse->setData($model->getPost(), "post");
+        } else {
+            $apiResponse->addErrors($model->getErrors());
         }
-
-        $title = $request->post('title');
-        $content = $request->post('content');
-
-        if (empty($title)) {
-            $response->setError("title can not be empty");
-            return $response->serialize();
-        }
-
-        if (empty($content)) {
-            $response->setError("content can not be empty");
-            return $response->serialize();
-        }
-
-        $user = User::findIdentityByAccessToken($this->getTokenFromRequest());
-
-        $post = new Post();
-        $post->title = $title;
-        $post->content = $content;
-        $post->userId = $user->userId;
-
-        if (!$post->save()) {
-            $response->setError('Unable to save post: ' . var_export($post->getErrors(), true));
-            return $response->serialize();
-        }
-        $response->setData($post);
-        return $response->serialize();
+        return $apiResponse->serialize();
     }
 
 
