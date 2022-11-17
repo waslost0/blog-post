@@ -7,8 +7,6 @@ use common\models\ApiResponse;
 use common\models\Post;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
-use Throwable;
-use yii\db\StaleObjectException;
 use yii\web\Controller;
 use yii\web\MethodNotAllowedHttpException;
 use yii\web\NotFoundHttpException;
@@ -100,42 +98,8 @@ class PostController extends Controller
 
     /**
      * @return array
-     * @throws MethodNotAllowedHttpException
-     * @throws ServerErrorHttpException|NotFoundHttpException
      */
     public function actionCreate(): array
-    {
-        $request = \Yii::$app->request;
-        if ($request->isPost) {
-            return $this->createPost($request);
-        } else {
-            throw new MethodNotAllowedHttpException;
-        }
-    }
-
-
-    /**
-     * @return array
-     * @throws MethodNotAllowedHttpException
-     * @throws ServerErrorHttpException|NotFoundHttpException
-     */
-    public function actionDelete(): array
-    {
-        $request = \Yii::$app->request;
-
-        if ($request->isPost) {
-            return $this->deletePost($request);
-        } else {
-            throw new MethodNotAllowedHttpException;
-        }
-    }
-
-
-    /**
-     * @param $request
-     * @return array
-     */
-    private function createPost($request): array
     {
         $model = new CreatePostForm();
         $model->load(\Yii::$app->request->post(), '');
@@ -151,13 +115,9 @@ class PostController extends Controller
 
 
     /**
-     * @param $request
      * @return array
-     * @throws NotFoundHttpException
-     * @throws StaleObjectException
-     * @throws Throwable
      */
-    private function deletePost($request): array
+    public function actionDelete(): array
     {
         $model = new DeletePostForm();
         $model->load(\Yii::$app->request->post(), '');
