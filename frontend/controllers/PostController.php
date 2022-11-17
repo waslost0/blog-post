@@ -5,8 +5,8 @@ namespace frontend\controllers;
 
 use common\models\ApiResponse;
 use common\models\Post;
-use common\models\User;
 use frontend\models\post\CreatePostForm;
+use frontend\models\post\DeletePostForm;
 use Throwable;
 use yii\db\StaleObjectException;
 use yii\web\Controller;
@@ -159,41 +159,16 @@ class PostController extends Controller
      */
     private function deletePost($request): array
     {
-        $response = new ApiResponse();
+        $model = new DeletePostForm();
+        $model->load(\Yii::$app->request->post(), '');
+        $apiResponse = new ApiResponse();
 
-        $tokenResponse = $this->checkToken();
-        if (!$tokenResponse->success) {
-            return $tokenResponse->serialize();
+        if ($model->deletePost()) {
+            $apiResponse->setData(null);
+        } else {
+            $apiResponse->addErrors($model->getErrors());
         }
-
-        $postId = $request->post('postId');
-        if (empty($postId)) {
-            $response->setError("postId can not be null");
-            return $response->serialize();
-        }
-
-        $accessToken = $request->get('accessToken');
-        $user = User::findIdentityByAccessToken($accessToken);
-
-        if (empty($user)) {
-            $response->setError('User not found');
-            return $response->serialize();
-        }
-
-        $post = Post::findOne(['postId' => $postId, 'userId' => $user->userId]);
-
-        if (empty($post)) {
-            $response->setError("Post not found");
-            return $response->serialize();
-        }
-
-        if (!$post->delete()) {
-            $response->setError('Unable to delete post:' . var_export($post->getErrors(), true));
-            return $response->serialize();
-        }
-
-        $response->success = true;
-        return $response->serialize();
+        return $apiResponse->serialize();
     }
 
     private function getPostsByOffset($offset = 0): array
