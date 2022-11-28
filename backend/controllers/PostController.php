@@ -18,9 +18,6 @@ use yii\web\Response;
  */
 class PostController extends Controller
 {
-
-    public string $modelClass = 'common\models\Post';
-
     /**
      * @inheritDoc
      */

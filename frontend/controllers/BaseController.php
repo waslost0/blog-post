@@ -4,50 +4,120 @@ namespace frontend\controllers;
 
 use common\models\ApiResponse;
 use common\models\User;
+use Yii;
+use yii\base\InvalidConfigException;
+use yii\filters\VerbFilter;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\Response;
+
 
 class BaseController extends Controller
 {
+    protected ApiResponse $apiResponse;
 
-    public function checkToken(): ApiResponse
+    /**
+     * @throws InvalidConfigException
+     */
+    public function init()
     {
-        $response = new ApiResponse();
-        $response->success = true;
-        $accessToken = $this->getTokenFromRequest();
-
-        if (empty($accessToken)) {
-            $response->setError("accessToken not found");
-            return $response;
-        }
-
-        $user = User::findIdentityByAccessToken($accessToken);
-
-        if (empty($user)) {
-            $response->setError("User not found");
-            return $response;
-        }
-        return $response;
+        $this->apiResponse = new ApiResponse();
+        \Yii::$app->user->enableSession = false;
+        $this->registerResponseComponent();
+        parent::init();
     }
 
-    public function getTokenFromRequest(): String
+    public function behaviors(): array
     {
-        $request = \Yii::$app->request;
-        $token = $request->get("accessToken");
-        if (!empty($token)) {
-            return $token;
-        }
-        return $request->post("accessToken");
+        return [
+            'contentNegotiator' => [
+                'class' => 'yii\filters\ContentNegotiator',
+                'formats' => [
+                    'application/json' => Response::FORMAT_JSON,
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'index' => ['GET'],
+                    'view' => ['GET'],
+                    'create' => ['GET', 'POST'],
+                    'update' => ['GET', 'PUT', 'POST'],
+                    'delete' => ['POST', 'DELETE'],
+                ],
+            ],
+        ];
     }
 
-    public function actionError(): array
+
+    /**
+     * @throws yii\base\InvalidConfigException
+     */
+    private function registerResponseComponent()
     {
-        $exception = \Yii::$app->errorHandler->exception;
-        $response = new ApiResponse();
-        if ($exception !== null) {
-            $response->setError($exception->getMessage());
-        } else {
-            $response->setError("Unknown error occurred");
-        }
-        return $response->serialize();
+        Yii::$app->set('response', [
+            'class' => 'yii\web\Response',
+            'format' => Response::FORMAT_JSON,
+            'charset' => 'UTF-8',
+            'on beforeSend' => function ($event) {
+                $response = $event->sender;
+
+                if (is_array($response->data)) {
+                    // ответ с ошибками
+                    if (!$response->isSuccessful) {
+                        $response->data = [
+                            "meta" => [
+                                'success' => $response->isSuccessful,
+                                'error' => $response->data["error"] ?? '',
+                            ],
+                            "data" => $response->data
+                        ];
+                    } else {
+                        // положительный ответ
+                        $response->data = [
+                            "meta" =>
+                                [
+                                    'success' => $response->isSuccessful,
+                                    'error' => ''
+                                ],
+                            "data" => $response->data
+                        ];
+                    }
+                    $response->format = yii\web\Response::FORMAT_JSON;
+                    if (YII_DEBUG) {
+                        Yii::trace('Response . ' . var_export($response->data, true));
+                    }
+                } else if (is_string($response->data)) {
+                    $response->format = yii\web\Response::FORMAT_RAW;
+                }
+                $response->statusCode = 200;
+            },
+        ]);
     }
 }
+
+
+/// {
+//    "meta": {
+//        "success": false,
+//        "error": ""
+//    },
+//    "data": {
+//        "name": "Exception",
+//        "message": "yii\\web\\User::login(): Argument #1 ($identity) must be of type yii\\web\\IdentityInterface, null given, called in C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php on line 124",
+//        "code": 0,
+//        "type": "TypeError",
+//        "file": "C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\web\\User.php",
+//        "line": 256,
+//        "stack-trace": [
+//            "#0 C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php(124): yii\\web\\User->login()",
+//            "#1 C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php(58): frontend\\controllers\\BaseController->checkToken()",
+//            "#2 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Controller.php(176): frontend\\controllers\\BaseController->beforeAction()",
+//            "#3 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Module.php(552): yii\\base\\Controller->runAction()",
+//            "#4 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\web\\Application.php(103): yii\\base\\Module->runAction()",
+//            "#5 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Application.php(384): yii\\web\\Application->handleRequest()",
+//            "#6 C:\\Server\\proj\\blog-post\\frontend\\web\\index.php(18): yii\\base\\Application->run()",
+//            "#7 {main}"
+//        ]
+//    }
+//}

@@ -3,15 +3,12 @@
 namespace frontend\controllers;
 
 
-use common\models\ApiResponse;
 use common\models\Post;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
-use yii\web\Controller;
-use yii\web\MethodNotAllowedHttpException;
-use yii\web\NotFoundHttpException;
-use yii\web\Response;
-use yii\web\ServerErrorHttpException;
+use Throwable;
+use Yii;
+use yii\db\StaleObjectException;
 
 
 /**
@@ -22,78 +19,31 @@ use yii\web\ServerErrorHttpException;
  *     @SWG\Info(version="1.0", title="Simple API"),
  * )
  */
-class PostController extends Controller
+class PostController extends BaseController
 {
-    public function init()
-    {
-        $module = \Yii::$app->getModule('api');
-        $module->init();
-        parent::init();
-    }
 
     public $enableCsrfValidation = false;
-    public string $modelClass = Post::class;
-
-    public function behaviors(): array
-    {
-        $behaviors['contentNegotiator'] = [
-            'class' => 'yii\filters\ContentNegotiator',
-            'formats' => [
-                'application/json' => Response::FORMAT_JSON,
-            ]
-        ];
-        return $behaviors;
-    }
-
 
     /**
      * @param int $offset
      * @return array
-     * @throws MethodNotAllowedHttpException
      */
     public function actionIndex(int $offset = 0): array
     {
-        $request = \Yii::$app->request;
-        $tokenResponse = $this->checkToken();
-        $response = new ApiResponse();
-        if (!$tokenResponse->success) {
-            return $tokenResponse->serialize();
-        }
-
         $posts = $this->getPostsByOffset($offset);
-        $response->setData($posts);
-
-        if ($request->isGet) {
-            return $response->serialize();
-        } else {
-            throw new MethodNotAllowedHttpException;
-        }
+        $this->apiResponse->setData($posts);
+        return $this->apiResponse->serialize();
     }
 
     /**
      * @param int $postId
      * @return array
-     * @throws MethodNotAllowedHttpException
      */
     public function actionView(int $postId): array
     {
-        $tokenResponse = $this->checkToken();
-        if (!$tokenResponse->success) {
-            return $tokenResponse->serialize();
-        }
-
-        $request = \Yii::$app->request;
-        $response = new ApiResponse();
-
         $post = Post::findOne($postId);
-
-        if ($request->isGet) {
-            $response->setData($post->serialize());
-            return $response->serialize();
-        } else {
-            // TODO: customize response with Exception as ApiResponse
-            throw new MethodNotAllowedHttpException;
-        }
+        $this->apiResponse->setData($post->serialize());
+        return $this->apiResponse->serialize();
     }
 
     /**
@@ -102,33 +52,29 @@ class PostController extends Controller
     public function actionCreate(): array
     {
         $model = new CreatePostForm();
-        $model->load(\Yii::$app->request->post(), '');
-        $apiResponse = new ApiResponse();
+        $model->load(Yii::$app->request->post(), '');
 
         if ($model->createPost()) {
-            $apiResponse->setData($model->getPost(), "post");
+            $this->apiResponse->setData($model->getPost(), "post");
         } else {
-            $apiResponse->addErrors($model->getErrors());
+            $this->apiResponse->addErrors($model->getErrors());
         }
-        return $apiResponse->serialize();
+        return $this->apiResponse->serialize();
     }
 
-
     /**
-     * @return array
+     * @throws StaleObjectException
+     * @throws Throwable
      */
     public function actionDelete(): array
     {
         $model = new DeletePostForm();
-        $model->load(\Yii::$app->request->post(), '');
-        $apiResponse = new ApiResponse();
+        $model->load(Yii::$app->request->post(), '');
 
-        if ($model->deletePost()) {
-            $apiResponse->setData(null);
-        } else {
-            $apiResponse->addErrors($model->getErrors());
+        if (!$model->deletePost()) {
+            $this->apiResponse->addErrors($model->getErrors());
         }
-        return $apiResponse->serialize();
+        return $this->apiResponse->serialize();
     }
 
     private function getPostsByOffset($offset = 0): array

@@ -10,12 +10,6 @@ class BaseModelForm extends Model
 {
     public $accessToken;
 
-    private string $errorText = "error";
-
-
-    /**
-     * {@inheritdoc}
-     */
     public function rules(): array
     {
         return [
@@ -25,16 +19,18 @@ class BaseModelForm extends Model
 
     public function setError($error = '')
     {
-        parent::addError($this->errorText, $error);
+        parent::addError("error", $error);
     }
 
     public function validate($attributeNames = null, $clearErrors = true): bool
     {
+        if (!parent::validate($attributeNames, $clearErrors)) {
+            return false;
+        }
         if (!$this->checkToken()) {
             return false;
         }
-
-        return parent::validate($attributeNames, $clearErrors);
+        return true;
     }
 
     public function checkToken(): bool
@@ -49,6 +45,7 @@ class BaseModelForm extends Model
         }
 
         $user = User::findIdentityByAccessToken($accessToken);
+        \Yii::$app->user->login($user);
 
         if (empty($user)) {
             $this->setError("User not found");

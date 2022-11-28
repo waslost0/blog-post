@@ -14,13 +14,14 @@ class ApiResponse extends ActiveRecord
     public function serialize(): array
     {
         $data = [];
-        $data["success"] = $this->success;
         \Yii::$app->response->setStatusCode(404);
-        if (!empty($this->getErrors($this->errorText))) {
+        if (!empty($this->getErrors())) {
             $data["success"] = false;
-            $data[$this->errorText] = $this->getFirstError($this->errorText);
+            $array = $this->getErrorSummary(false);
+            $data[$this->errorText] = array_pop($array);
             $data["errors"] = $this->getErrors($this->errorText);
         } else {
+            $data["success"] = true;
             $data[$this->dataName] = $this->data;
             \Yii::$app->response->setStatusCode(200);
         }
