@@ -21,7 +21,7 @@ class CreatePostForm extends BaseModelForm
         return
             array_merge(
                 [
-                    [['title', 'content'], 'string']
+                    [['title', 'content'], 'string'],
                 ], parent::rules(),
             );
     }

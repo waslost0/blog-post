@@ -22,10 +22,55 @@ class BaseController extends Controller
     public function init()
     {
         $this->apiResponse = new ApiResponse();
-        \Yii::$app->user->enableSession = false;
+        Yii::$app->user->enableSession = false;
         $this->registerResponseComponent();
         parent::init();
     }
+
+    /**
+     * @throws BadRequestHttpException
+     */
+    public function beforeAction($action): bool
+    {
+        if (!parent::beforeAction($action)) {
+            return false;
+        }
+        if (!$this->checkToken()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function checkToken(): bool
+    {
+        $accessToken = $this->getTokenFromRequest();
+
+        if (empty($accessToken)) {
+            $this->apiResponse->setError("accessToken not found");
+            return false;
+        }
+
+        $user = User::findIdentityByAccessToken($accessToken);
+
+        if (empty($user)) {
+            $this->apiResponse->setError("User not found");
+            return false;
+        }
+        Yii::$app->user->login($user);
+        return true;
+    }
+
+    public function getTokenFromRequest(): ?string
+    {
+        $request = Yii::$app->request;
+        $token = $request->get("accessToken");
+        if (!empty($token)) {
+            return $token;
+        }
+        return $request->post("accessToken");
+    }
+
 
     public function behaviors(): array
     {
@@ -61,6 +106,7 @@ class BaseController extends Controller
             'charset' => 'UTF-8',
             'on beforeSend' => function ($event) {
                 $response = $event->sender;
+                $response->data = $this->apiResponse->serialize();
 
                 if (is_array($response->data)) {
                     // ответ с ошибками
@@ -95,29 +141,3 @@ class BaseController extends Controller
         ]);
     }
 }
-
-
-/// {
-//    "meta": {
-//        "success": false,
-//        "error": ""
-//    },
-//    "data": {
-//        "name": "Exception",
-//        "message": "yii\\web\\User::login(): Argument #1 ($identity) must be of type yii\\web\\IdentityInterface, null given, called in C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php on line 124",
-//        "code": 0,
-//        "type": "TypeError",
-//        "file": "C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\web\\User.php",
-//        "line": 256,
-//        "stack-trace": [
-//            "#0 C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php(124): yii\\web\\User->login()",
-//            "#1 C:\\Server\\proj\\blog-post\\frontend\\controllers\\BaseController.php(58): frontend\\controllers\\BaseController->checkToken()",
-//            "#2 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Controller.php(176): frontend\\controllers\\BaseController->beforeAction()",
-//            "#3 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Module.php(552): yii\\base\\Controller->runAction()",
-//            "#4 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\web\\Application.php(103): yii\\base\\Module->runAction()",
-//            "#5 C:\\Server\\proj\\blog-post\\vendor\\yiisoft\\yii2\\base\\Application.php(384): yii\\web\\Application->handleRequest()",
-//            "#6 C:\\Server\\proj\\blog-post\\frontend\\web\\index.php(18): yii\\base\\Application->run()",
-//            "#7 {main}"
-//        ]
-//    }
-//}

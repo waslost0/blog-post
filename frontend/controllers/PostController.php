@@ -6,6 +6,7 @@ namespace frontend\controllers;
 use common\models\Post;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
+use frontend\models\post\UpdatePostForm;
 use Throwable;
 use Yii;
 use yii\db\StaleObjectException;
@@ -46,6 +47,8 @@ class PostController extends BaseController
         return $this->apiResponse->serialize();
     }
 
+
+
     /**
      * @return array
      */
@@ -74,6 +77,24 @@ class PostController extends BaseController
         if (!$model->deletePost()) {
             $this->apiResponse->addErrors($model->getErrors());
         }
+        return $this->apiResponse->serialize();
+    }
+
+    /**
+     * @throws StaleObjectException
+     * @throws Throwable
+     */
+    public function actionUpdate($postId): array
+    {
+        $model = new UpdatePostForm();
+
+        $model->load(Yii::$app->request->get(), '');
+
+        if (!$model->updatePost()) {
+            $this->apiResponse->addErrors($model->getErrors());
+        }
+        $this->apiResponse->setError("qweqweqw ");
+//        $this->apiResponse->setData($model->getPost());
         return $this->apiResponse->serialize();
     }
 
