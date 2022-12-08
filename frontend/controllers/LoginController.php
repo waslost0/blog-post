@@ -2,13 +2,8 @@
 
 namespace frontend\controllers;
 
-use common\models\AccessToken;
-use common\models\User;
-use Error;
+use frontend\models\login\LoginForm;
 use Yii;
-use yii\base\Exception;
-use yii\web\MethodNotAllowedHttpException;
-use yii\web\NotFoundHttpException;
 
 
 class LoginController extends BaseController
@@ -18,55 +13,16 @@ class LoginController extends BaseController
 
 
     /**
-     * @throws NotFoundHttpException
-     * @throws Exception
+     * @return array
      */
     public function actionIndex(): array
     {
-        $request = Yii::$app->request;
+        $model = new LoginForm();
+        $model->load(Yii::$app->request->post(), '');
 
-        if ($request->isPost) {
-            return $this->login($request);
-        } else {
-            throw new MethodNotAllowedHttpException;
+        if (!$model->loginUser()) {
+            return $model->getErrors();
         }
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function login($request): array
-    {
-        $username = $request->post('username');
-        $password = $request->post('password');
-
-        if ($password == null || $username == null) {
-            throw new Error("User name and password must be not empty");
-        }
-
-        $user = User::findOne(['username' => $username]);
-
-        if ($user == null) {
-            throw new Error("User not found");
-        }
-        if (!$user->validatePassword($password)) {
-            throw new Error("Invalid password");
-        }
-
-        $accessToken = $this->createAccessToken($user->userId);
-        $accessToken->save();
-        return ['accessToken' => $accessToken->accessToken];
-    }
-
-
-    /**
-     * @throws Exception
-     */
-    private static function createAccessToken(int $userId): AccessToken
-    {
-        $accessToken = new AccessToken();
-        $accessToken->userId = $userId;
-        $accessToken->accessToken = AccessToken::generateToken();
-        return $accessToken;
+        return $model->getToken();
     }
 }

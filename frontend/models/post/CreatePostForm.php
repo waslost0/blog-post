@@ -3,6 +3,7 @@
 namespace frontend\models\post;
 
 use common\models\Post;
+use Error;
 use frontend\models\BaseModelForm;
 
 
@@ -43,6 +44,17 @@ class CreatePostForm extends BaseModelForm
             return false;
         }
 
+        return true;
+    }
+
+    public function validate($attributeNames = null, $clearErrors = true): bool
+    {
+        if (!parent::validate($attributeNames, $clearErrors)) {
+            return false;
+        }
+        if (empty($this->title)) {
+            throw new Error("title can not be null");
+        }
         return true;
     }
 

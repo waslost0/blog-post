@@ -16,4 +16,16 @@ class AccessToken extends BaseAccessToken
     {
         return Yii::$app->security->generateRandomString();
     }
+
+    /**
+     * @throws Exception
+     */
+    public static function createAccessToken(int $userId): AccessToken
+    {
+        $accessToken = new AccessToken();
+        $accessToken->userId = $userId;
+        $accessToken->accessToken = AccessToken::generateToken();
+        $accessToken->save();
+        return $accessToken;
+    }
 }

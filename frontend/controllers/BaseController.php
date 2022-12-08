@@ -6,7 +6,6 @@ use common\models\User;
 use Error;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\filters\VerbFilter;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\web\Response;
@@ -14,6 +13,7 @@ use yii\web\Response;
 
 class BaseController extends Controller
 {
+    public $enableCsrfValidation = false;
     public bool $hasToCheckToken = true;
 
     /**

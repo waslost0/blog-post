@@ -24,8 +24,6 @@ use yii\db\StaleObjectException;
 class PostController extends BaseController
 {
 
-    public $enableCsrfValidation = false;
-
     /**
      * @param int $offset
      * @return array
