@@ -2,8 +2,8 @@
 
 namespace frontend\controllers;
 
-use common\models\ApiResponse;
 use common\models\User;
+use Error;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\filters\VerbFilter;
@@ -14,14 +14,13 @@ use yii\web\Response;
 
 class BaseController extends Controller
 {
-    protected ApiResponse $apiResponse;
+    public bool $hasToCheckToken = true;
 
     /**
      * @throws InvalidConfigException
      */
     public function init()
     {
-        $this->apiResponse = new ApiResponse();
         Yii::$app->user->enableSession = false;
         $this->registerResponseComponent();
         parent::init();
@@ -35,7 +34,7 @@ class BaseController extends Controller
         if (!parent::beforeAction($action)) {
             return false;
         }
-        if (!$this->checkToken()) {
+        if ($this->hasToCheckToken && !$this->checkToken()) {
             return false;
         }
 
@@ -47,15 +46,13 @@ class BaseController extends Controller
         $accessToken = $this->getTokenFromRequest();
 
         if (empty($accessToken)) {
-            $this->apiResponse->setError("accessToken not found");
-            return false;
+            throw new Error("accessToken not found");
         }
 
         $user = User::findIdentityByAccessToken($accessToken);
 
         if (empty($user)) {
-            $this->apiResponse->setError("User not found");
-            return false;
+            throw new Error("User not found");
         }
         Yii::$app->user->login($user);
         return true;
@@ -81,16 +78,6 @@ class BaseController extends Controller
                     'application/json' => Response::FORMAT_JSON,
                 ],
             ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'index' => ['GET'],
-                    'view' => ['GET'],
-                    'create' => ['GET', 'POST'],
-                    'update' => ['GET', 'PUT', 'POST'],
-                    'delete' => ['POST', 'DELETE'],
-                ],
-            ],
         ];
     }
 
@@ -100,38 +87,36 @@ class BaseController extends Controller
      */
     private function registerResponseComponent()
     {
-        Yii::$app->set('response', [
+        \Yii::$app->set('response', [
             'class' => 'yii\web\Response',
             'format' => Response::FORMAT_JSON,
             'charset' => 'UTF-8',
             'on beforeSend' => function ($event) {
                 $response = $event->sender;
-                $response->data = $this->apiResponse->serialize();
 
                 if (is_array($response->data)) {
                     // ответ с ошибками
                     if (!$response->isSuccessful) {
                         $response->data = [
                             "meta" => [
-                                'success' => $response->isSuccessful,
-                                'error' => $response->data["error"] ?? '',
+                                "success" => $response->isSuccessful,
+                                "error" => $response->data["message"] ?? "",
                             ],
                             "data" => $response->data
                         ];
                     } else {
                         // положительный ответ
                         $response->data = [
-                            "meta" =>
-                                [
-                                    'success' => $response->isSuccessful,
-                                    'error' => ''
-                                ],
+                            "meta" => [
+                                "success" => $response->isSuccessful,
+                                "error" => ""
+                            ],
                             "data" => $response->data
                         ];
                     }
                     $response->format = yii\web\Response::FORMAT_JSON;
                     if (YII_DEBUG) {
-                        Yii::trace('Response . ' . var_export($response->data, true));
+                        \Yii::trace('Response . ' . var_export($response->data, true));
                     }
                 } else if (is_string($response->data)) {
                     $response->format = yii\web\Response::FORMAT_RAW;

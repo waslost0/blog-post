@@ -3,31 +3,19 @@
 namespace frontend\controllers;
 
 use common\models\AccessToken;
-use common\models\ApiResponse;
 use common\models\User;
+use Error;
 use Yii;
 use yii\base\Exception;
 use yii\web\MethodNotAllowedHttpException;
 use yii\web\NotFoundHttpException;
-use yii\web\Response;
 
 
 class LoginController extends BaseController
 {
+    public bool $hasToCheckToken = false;
     public $enableCsrfValidation = false;
 
-    public function behaviors(): array
-    {
-        $behaviors = parent::behaviors();
-        $behaviors['contentNegotiator'] = [
-            'class' => 'yii\filters\ContentNegotiator',
-            'formats' => [
-                'application/json' => Response::FORMAT_JSON,
-            ]
-        ];
-
-        return $behaviors;
-    }
 
     /**
      * @throws NotFoundHttpException
@@ -49,31 +37,25 @@ class LoginController extends BaseController
      */
     private function login($request): array
     {
-        $response = new ApiResponse();
         $username = $request->post('username');
         $password = $request->post('password');
 
         if ($password == null || $username == null) {
-            $response->setError('User name and password must be not empty');
-            return $response->serialize();
+            throw new Error("User name and password must be not empty");
         }
 
         $user = User::findOne(['username' => $username]);
 
         if ($user == null) {
-            $response->setError('User not found');
-            return $response->serialize();
+            throw new Error("User not found");
         }
         if (!$user->validatePassword($password)) {
-            $response->setError('Invalid password');
-            return $response->serialize();
+            throw new Error("Invalid password");
         }
 
         $accessToken = $this->createAccessToken($user->userId);
         $accessToken->save();
-        $response->setData(['accessToken' => $accessToken->accessToken]);
-
-        return $response->serialize();
+        return ['accessToken' => $accessToken->accessToken];
     }
 
 

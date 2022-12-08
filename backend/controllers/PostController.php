@@ -2,8 +2,6 @@
 
 namespace backend\controllers;
 
-use common\models\AccessToken;
-use common\models\ApiResponse;
 use common\models\Post;
 use common\models\PostSearch;
 use Throwable;

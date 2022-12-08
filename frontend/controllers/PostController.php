@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 
 use common\models\Post;
+use Error;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
 use frontend\models\post\UpdatePostForm;
@@ -31,9 +32,7 @@ class PostController extends BaseController
      */
     public function actionIndex(int $offset = 0): array
     {
-        $posts = $this->getPostsByOffset($offset);
-        $this->apiResponse->setData($posts);
-        return $this->apiResponse->serialize();
+        return $this->getPostsByOffset($offset);
     }
 
     /**
@@ -43,10 +42,11 @@ class PostController extends BaseController
     public function actionView(int $postId): array
     {
         $post = Post::findOne($postId);
-        $this->apiResponse->setData($post->serialize());
-        return $this->apiResponse->serialize();
+        if (empty($post)) {
+            throw new Error("Post not found");
+        }
+        return $post->serialize();
     }
-
 
 
     /**
@@ -58,11 +58,10 @@ class PostController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if ($model->createPost()) {
-            $this->apiResponse->setData($model->getPost(), "post");
+            return $model->getPost();
         } else {
-            $this->apiResponse->addErrors($model->getErrors());
+            return $model->getErrors();
         }
-        return $this->apiResponse->serialize();
     }
 
     /**
@@ -75,27 +74,26 @@ class PostController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->deletePost()) {
-            $this->apiResponse->addErrors($model->getErrors());
+            return $model->getErrors();
         }
-        return $this->apiResponse->serialize();
+        return [true];
     }
 
     /**
      * @throws StaleObjectException
      * @throws Throwable
      */
-    public function actionUpdate($postId): array
+    public function actionUpdate(): array
     {
         $model = new UpdatePostForm();
 
-        $model->load(Yii::$app->request->get(), '');
+        $model->load(Yii::$app->request->post(), '');
 
         if (!$model->updatePost()) {
-            $this->apiResponse->addErrors($model->getErrors());
+            return $model->getErrors();
         }
-        $this->apiResponse->setError("qweqweqw ");
-//        $this->apiResponse->setData($model->getPost());
-        return $this->apiResponse->serialize();
+
+        return $model->getPost();
     }
 
     private function getPostsByOffset($offset = 0): array

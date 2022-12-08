@@ -14,9 +14,4 @@ class BaseModelForm extends Model
             ['accessToken', 'string']
         ];
     }
-
-    public function setError($error = '')
-    {
-        parent::addError("error", $error);
-    }
 }
