@@ -5,11 +5,9 @@ namespace frontend\models\post;
 use common\models\Post;
 use Error;
 use frontend\models\BaseModelForm;
-use Throwable;
-use yii\db\StaleObjectException;
 
 
-class DeletePostForm extends BaseModelForm
+class ViewPostForm extends BaseModelForm
 {
     public int $postId;
     private ?Post $post;
@@ -24,19 +22,21 @@ class DeletePostForm extends BaseModelForm
     }
 
     /**
-     * @throws StaleObjectException
-     * @throws Throwable
+     * @return bool
      */
-    public function deletePost(): bool
+    public function getMyPost(): bool
     {
         if (!$this->validate()) {
             return false;
         }
 
-        if (!$this->post->delete()) {
-            throw new Error($this->post->getErrors());
-        }
+        $this->post = Post::findOne([
+            'postId' => $this->postId,
+        ]);
 
+        if (empty($this->post)) {
+            throw new Error("Post not found");
+        }
         return true;
     }
 
@@ -49,16 +49,11 @@ class DeletePostForm extends BaseModelForm
             throw new Error("postId can not be null");
         }
 
-        $user = \Yii::$app->user->identity;
-        $this->post = Post::findOne([
-            'postId' => $this->postId,
-            'userId' => $user->userId,
-        ]);
-
-        if (empty($this->post)) {
-            throw new Error("Post not found");
-        }
-
         return true;
+    }
+
+    public function getPost(): array
+    {
+        return $this->post->serialize();
     }
 }

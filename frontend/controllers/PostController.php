@@ -8,9 +8,11 @@ use Error;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
 use frontend\models\post\UpdatePostForm;
+use frontend\models\post\ViewPostForm;
 use Throwable;
 use Yii;
 use yii\db\StaleObjectException;
+use yii\filters\VerbFilter;
 
 
 /**
@@ -24,6 +26,22 @@ use yii\db\StaleObjectException;
 class PostController extends BaseController
 {
 
+    public function behaviors(): array
+    {
+        $behaviors = parent::behaviors();
+        $behaviors['verbs'] = [
+            'class' => VerbFilter::class,
+            'actions' => [
+                'index' => ['GET'],
+                'view' => ['GET'],
+                'create' => ['GET', 'POST'],
+                'update' => ['PUT', 'POST'],
+                'delete' => ['POST', 'DELETE'],
+            ],
+        ];
+        return $behaviors;
+    }
+
     /**
      * @param int $offset
      * @return array
@@ -34,16 +52,19 @@ class PostController extends BaseController
     }
 
     /**
-     * @param int $postId
      * @return array
+     * @throws StaleObjectException
+     * @throws Throwable
      */
-    public function actionView(int $postId): array
+    public function actionView(): array
     {
-        $post = Post::findOne($postId);
-        if (empty($post)) {
-            throw new Error("Post not found");
+        $model = new ViewPostForm();
+        $model->load(Yii::$app->request->get(), '');
+
+        if (!$model->getMyPost()) {
+            return $model->getErrors();
         }
-        return $post->serialize();
+        return $model->getPost();
     }
 
 
@@ -55,11 +76,10 @@ class PostController extends BaseController
         $model = new CreatePostForm();
         $model->load(Yii::$app->request->post(), '');
 
-        if ($model->createPost()) {
-            return $model->getPost();
-        } else {
+        if (!$model->createPost()) {
             return $model->getErrors();
         }
+        return $model->getPost();
     }
 
     /**
