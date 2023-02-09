@@ -2,8 +2,8 @@
 
 namespace frontend\models\post;
 
+use common\components\helpers\ModelHelper;
 use common\models\Post;
-use Error;
 use frontend\models\BaseModelForm;
 use Throwable;
 use yii\db\StaleObjectException;
@@ -11,15 +11,19 @@ use yii\db\StaleObjectException;
 
 class DeletePostForm extends BaseModelForm
 {
-    public int $postId;
+    public $postId;
     private ?Post $post;
 
     public function rules(): array
     {
-        return array_merge(
-            [['postId', 'integer']],
-            parent::rules(),
-        );
+        return
+            array_merge(
+                [
+                    ['postId', 'integer'],
+                    ['postId', 'required', 'message' => 'postId can not be null'],
+                ],
+                parent::rules(),
+            );
     }
 
     /**
@@ -33,8 +37,9 @@ class DeletePostForm extends BaseModelForm
         }
 
         if (!$this->post->delete()) {
-            //TODO: user $this->addError + return false;
-            throw new Error($this->post->getErrors());
+            $error = ModelHelper::getFirstError($this);
+            $this->addError('', !empty($error) ? $error : 'Delete post fail');
+            return false;
         }
 
         return true;
@@ -45,10 +50,6 @@ class DeletePostForm extends BaseModelForm
         if (!parent::validate($attributeNames, $clearErrors)) {
             return false;
         }
-        //TODO: add "required" rule for postId
-        if (empty($this->postId)) {
-            throw new Error("postId can not be null");
-        }
 
         $user = \Yii::$app->user->identity;
         $this->post = Post::findOne([
@@ -57,7 +58,8 @@ class DeletePostForm extends BaseModelForm
         ]);
 
         if (empty($this->post)) {
-            throw new Error("Post not found");
+            $this->addError("", "Post not found");
+            return false;
         }
 
         return true;
