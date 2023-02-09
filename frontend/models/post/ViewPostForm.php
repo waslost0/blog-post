@@ -43,15 +43,6 @@ class ViewPostForm extends BaseModelForm
         return true;
     }
 
-    public function validate($attributeNames = null, $clearErrors = true): bool
-    {
-        if (!parent::validate($attributeNames, $clearErrors)) {
-            return false;
-        }
-
-        return true;
-    }
-
     public function serializePost(): array
     {
         return $this->post->serialize();
