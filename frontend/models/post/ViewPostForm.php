@@ -3,20 +3,23 @@
 namespace frontend\models\post;
 
 use common\models\Post;
-use Error;
 use frontend\models\BaseModelForm;
 
 
 class ViewPostForm extends BaseModelForm
 {
-    public int $postId;
+    public $postId;
     private ?Post $post;
 
     public function rules(): array
     {
+        //TODO: update formatting
         return
             array_merge(
-                [['postId', 'integer']],
+                [
+                    ['postId', 'integer'],
+                    ['postId', 'required', 'message' => 'postId can not be null'],
+                ],
                 parent::rules(),
             );
     }
@@ -24,7 +27,7 @@ class ViewPostForm extends BaseModelForm
     /**
      * @return bool
      */
-    public function getMyPost(): bool
+    public function loadMyPost(): bool
     {
         if (!$this->validate()) {
             return false;
@@ -35,7 +38,8 @@ class ViewPostForm extends BaseModelForm
         ]);
 
         if (empty($this->post)) {
-            throw new Error("Post not found");
+            $this->addError('', "Post not found");
+            return false;
         }
         return true;
     }
@@ -45,14 +49,11 @@ class ViewPostForm extends BaseModelForm
         if (!parent::validate($attributeNames, $clearErrors)) {
             return false;
         }
-        if (empty($this->postId)) {
-            throw new Error("postId can not be null");
-        }
 
         return true;
     }
 
-    public function getPost(): array
+    public function serializePost(): array
     {
         return $this->post->serialize();
     }

@@ -16,11 +16,10 @@ class DeletePostForm extends BaseModelForm
 
     public function rules(): array
     {
-        return
-            array_merge(
-                [['postId', 'integer']],
-                parent::rules(),
-            );
+        return array_merge(
+            [['postId', 'integer']],
+            parent::rules(),
+        );
     }
 
     /**
@@ -34,6 +33,7 @@ class DeletePostForm extends BaseModelForm
         }
 
         if (!$this->post->delete()) {
+            //TODO: user $this->addError + return false;
             throw new Error($this->post->getErrors());
         }
 
@@ -45,6 +45,7 @@ class DeletePostForm extends BaseModelForm
         if (!parent::validate($attributeNames, $clearErrors)) {
             return false;
         }
+        //TODO: add "required" rule for postId
         if (empty($this->postId)) {
             throw new Error("postId can not be null");
         }

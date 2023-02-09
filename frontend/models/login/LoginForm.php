@@ -47,20 +47,20 @@ class LoginForm extends BaseModelForm
             return false;
         }
 
+        //TODO: try use rules
         if (empty($this->username)) {
             throw new Error("username must be not empty");
         }
-
+        //TODO: try use rules "trim" + "required"
         if (empty($this->password)) {
             throw new Error("password must be not empty");
         }
 
         $this->user = User::findOne(['username' => $this->username]);
-
-
         if ($this->user == null) {
             throw new Error("User not found");
         }
+        //TODO: check namespace common\models\LoginForm for validatePassword
         if (!$this->user->validatePassword($this->password)) {
             throw new Error("Invalid password");
         }

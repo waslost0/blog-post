@@ -94,25 +94,15 @@ class BaseController extends Controller
             'on beforeSend' => function ($event) {
                 $response = $event->sender;
 
-                if (is_array($response->data)) {
+                if (($response->data !== null) && is_array($response->data)) {
                     // ответ с ошибками
                     if (!$response->isSuccessful) {
-                        $response->data = [
-                            "meta" => [
-                                "success" => $response->isSuccessful,
-                                "error" => $response->data["message"] ?? "",
-                            ],
-                            "data" => $response->data
-                        ];
+                        $response->data = ["meta" => ['success' => $response->isSuccessful,
+                            'error' => isset($response->data["message"]) ? $response->data["message"] : '',
+                        ], "data" => $response->data];
                     } else {
                         // положительный ответ
-                        $response->data = [
-                            "meta" => [
-                                "success" => $response->isSuccessful,
-                                "error" => ""
-                            ],
-                            "data" => $response->data
-                        ];
+                        $response->data = ["meta" => ['success' => $response->isSuccessful, 'error' => ''], "data" => $response->data];
                     }
                     $response->format = yii\web\Response::FORMAT_JSON;
                     if (YII_DEBUG) {
@@ -120,6 +110,9 @@ class BaseController extends Controller
                     }
                 } else if (is_string($response->data)) {
                     $response->format = yii\web\Response::FORMAT_RAW;
+                }
+                if ($response->statusCode == 333) {
+                    $response->data['meta']['errorCode'] = true;
                 }
                 $response->statusCode = 200;
             },

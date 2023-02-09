@@ -7,6 +7,9 @@ use Error;
 use frontend\models\BaseModelForm;
 
 
+//TODO: CreatePostForm + UpdatePostForm -> SavePostForm
+//TODO: try to use https://www.yiiframework.com/doc/guide/2.0/ru/structure-models#scenarios
+//TODO: or check by postId in params
 class CreatePostForm extends BaseModelForm
 {
     public $title;
@@ -25,6 +28,10 @@ class CreatePostForm extends BaseModelForm
                     [['title', 'content'], 'string'],
                 ], parent::rules(),
             );
+        // TODO: try to use
+        // return array_merge(parent::rules(), [
+        //     [['title', 'content'], 'string'],
+        // ]);
     }
 
     public function createPost(): bool
@@ -52,6 +59,7 @@ class CreatePostForm extends BaseModelForm
         if (!parent::validate($attributeNames, $clearErrors)) {
             return false;
         }
+        //TODO: use rules "required"
         if (empty($this->title)) {
             throw new Error("title can not be null");
         }
@@ -59,6 +67,7 @@ class CreatePostForm extends BaseModelForm
     }
 
 
+    //TODO: update naming
     public function getPost()
     {
         return $this->post->serialize();

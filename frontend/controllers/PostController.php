@@ -3,8 +3,9 @@
 namespace frontend\controllers;
 
 
+use common\components\helpers\ModelHelper;
 use common\models\Post;
-use Error;
+use ErrorException;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
 use frontend\models\post\UpdatePostForm;
@@ -53,7 +54,6 @@ class PostController extends BaseController
 
     /**
      * @return array
-     * @throws StaleObjectException
      * @throws Throwable
      */
     public function actionView(): array
@@ -61,10 +61,10 @@ class PostController extends BaseController
         $model = new ViewPostForm();
         $model->load(Yii::$app->request->get(), '');
 
-        if (!$model->getMyPost()) {
-            return $model->getErrors();
+        if (!$model->loadMyPost()) {
+            throw new ErrorException(ModelHelper::getFirstError($model));
         }
-        return $model->getPost();
+        return $model->serializePost();
     }
 
 
@@ -77,7 +77,7 @@ class PostController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->createPost()) {
-            return $model->getErrors();
+            throw new ErrorException(ModelHelper::getFirstError($model));
         }
         return $model->getPost();
     }
@@ -92,7 +92,7 @@ class PostController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->deletePost()) {
-            return $model->getErrors();
+            throw new ErrorException(ModelHelper::getFirstError($model));
         }
         return [true];
     }
@@ -108,7 +108,7 @@ class PostController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->updatePost()) {
-            return $model->getErrors();
+            throw new ErrorException(ModelHelper::getFirstError($model));
         }
 
         return $model->getPost();
@@ -116,6 +116,7 @@ class PostController extends BaseController
 
     private function getPostsByOffset($offset = 0): array
     {
+        //TODO: move to model
         $posts = [];
         $query = Post::find()
             ->limit(10)
