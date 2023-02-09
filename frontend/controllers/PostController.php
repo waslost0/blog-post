@@ -8,6 +8,7 @@ use common\models\Post;
 use ErrorException;
 use frontend\models\post\CreatePostForm;
 use frontend\models\post\DeletePostForm;
+use frontend\models\post\PostListForm;
 use frontend\models\post\UpdatePostForm;
 use frontend\models\post\ViewPostForm;
 use Throwable;
@@ -16,14 +17,6 @@ use yii\db\StaleObjectException;
 use yii\filters\VerbFilter;
 
 
-/**
- * @SWG\Swagger(
- *     basePath="/",
- *     produces={"application/json"},
- *     consumes={"application/x-www-form-urlencoded"},
- *     @SWG\Info(version="1.0", title="Simple API"),
- * )
- */
 class PostController extends BaseController
 {
 
@@ -44,12 +37,19 @@ class PostController extends BaseController
     }
 
     /**
-     * @param int $offset
      * @return array
+     * @throws ErrorException
      */
-    public function actionIndex(int $offset = 0): array
+    public function actionList(): array
     {
-        return $this->getPostsByOffset($offset);
+        $form = new PostListForm();
+        $form->load(Yii::$app->request->get(), '');
+
+        if ($form->validate() && $form->selectPosts()) {
+            return $form->serializeResponseToArray();
+        } else {
+            throw new ErrorException(ModelHelper::getFirstError($form));
+        }
     }
 
     /**
@@ -70,6 +70,7 @@ class PostController extends BaseController
 
     /**
      * @return array
+     * @throws ErrorException
      */
     public function actionCreate(): array
     {
@@ -104,7 +105,6 @@ class PostController extends BaseController
     public function actionUpdate(): array
     {
         $model = new UpdatePostForm();
-
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->updatePost()) {
@@ -112,19 +112,5 @@ class PostController extends BaseController
         }
 
         return $model->getPost();
-    }
-
-    private function getPostsByOffset($offset = 0): array
-    {
-        //TODO: move to model
-        $posts = [];
-        $query = Post::find()
-            ->limit(10)
-            ->offset($offset);
-        foreach ($query->each() as $post) {
-            $posts[] = $post->serialize();
-        }
-        return $posts;
-
     }
 }
