@@ -2,8 +2,8 @@
 
 namespace frontend\models\post;
 
+use common\components\helpers\ModelHelper;
 use common\models\Post;
-use Error;
 use frontend\models\BaseModelForm;
 use Throwable;
 
@@ -22,7 +22,10 @@ class UpdatePostForm extends BaseModelForm
             array_merge(
                 [
                     ['postId', 'integer'],
+                    ['postId', 'required', 'message' => 'postId can not be null'],
                     [['title', 'content'], 'string'],
+                    [['title', 'content'], 'filter', 'filter' => 'trim'],
+                    ['title', 'required', 'message' => 'title can not be null'],
                 ],
                 parent::rules(),
             );
@@ -41,7 +44,9 @@ class UpdatePostForm extends BaseModelForm
         $this->post->content = $this->content;
 
         if (!$this->post->save()) {
-            throw new Error($this->getErrors());
+            $error = ModelHelper::getFirstError($this);
+            $this->addError('', !empty($error) ? $error : 'Update post fail');
+            return false;
         }
 
         return true;
@@ -52,22 +57,16 @@ class UpdatePostForm extends BaseModelForm
         if (!parent::validate($attributeNames, $clearErrors)) {
             return false;
         }
-        if (empty($this->postId)) {
-            throw new Error("postId can not be null");
-        }
-        if (empty($this->title)) {
-            throw new Error("title can not be null");
-        }
 
         $user = \Yii::$app->user->identity;
-        //TODO: разделить получение сущности и проверку прав
         $this->post = Post::findOne([
             'postId' => $this->postId,
             'userId' => $user->userId,
         ]);
 
         if (empty($this->post)) {
-            throw new Error("Post not found");
+            $this->addError("", "Post not found");
+            return false;
         }
 
         return true;
