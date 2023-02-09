@@ -24,6 +24,10 @@ class LoginForm extends BaseModelForm
             array_merge(
                 [
                     [['username', 'password'], 'string'],
+                    [['username', 'password'], 'filter', 'filter' => 'trim'],
+                    ['username', 'required', 'message' => 'username can not be null'],
+                    ['password', 'required', 'message' => 'password can not be null'],
+                    ['password', 'validatePassword'],
                 ], parent::rules(),
             );
     }
@@ -47,28 +51,26 @@ class LoginForm extends BaseModelForm
             return false;
         }
 
-        //TODO: try use rules
-        if (empty($this->username)) {
-            throw new Error("username must be not empty");
-        }
-        //TODO: try use rules "trim" + "required"
-        if (empty($this->password)) {
-            throw new Error("password must be not empty");
-        }
-
         $this->user = User::findOne(['username' => $this->username]);
-        if ($this->user == null) {
+        if (empty($this->user)) {
             throw new Error("User not found");
-        }
-        //TODO: check namespace common\models\LoginForm for validatePassword
-        if (!$this->user->validatePassword($this->password)) {
-            throw new Error("Invalid password");
         }
         return true;
     }
 
+    public function validatePassword($attribute, $params)
+    {
+        if (!$this->hasErrors()) {
+            $user = \Yii::$app->user->identity;
+            if (!$user || !$user->validatePassword($this->password)) {
+                $this->addError($attribute, 'Incorrect username or password.');
+            }
+        }
 
-    public function getToken(): array
+    }
+
+
+    public function serializeToken(): array
     {
         return ['accessToken' => $this->accessToken->accessToken];
     }

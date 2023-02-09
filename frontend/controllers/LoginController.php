@@ -2,6 +2,8 @@
 
 namespace frontend\controllers;
 
+use common\components\helpers\ModelHelper;
+use ErrorException;
 use frontend\models\login\LoginForm;
 use Yii;
 use yii\base\Exception;
@@ -35,9 +37,9 @@ class LoginController extends BaseController
         $model->load(Yii::$app->request->post(), '');
 
         if (!$model->loginUser()) {
-            return $model->getErrors();
+            throw new ErrorException(ModelHelper::getFirstError($model));
         }
-        return $model->getToken();
+        return $model->serializeToken();
     }
 
 //    /**
