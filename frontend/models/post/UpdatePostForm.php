@@ -73,7 +73,7 @@ class UpdatePostForm extends BaseModelForm
     }
 
 
-    public function getPost(): array
+    public function serializePost(): array
     {
         return $this->post->serialize();
     }
