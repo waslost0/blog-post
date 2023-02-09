@@ -3,7 +3,6 @@
 namespace frontend\models\post;
 
 use common\models\Post;
-use Error;
 use frontend\models\BaseModelForm;
 
 
@@ -26,12 +25,11 @@ class CreatePostForm extends BaseModelForm
             array_merge(
                 [
                     [['title', 'content'], 'string'],
-                ], parent::rules(),
+                    [['title', 'content'], 'filter', 'filter' => 'trim'],
+                    ['title', 'required', 'message' => 'title can not be null'],
+                ],
+                parent::rules(),
             );
-        // TODO: try to use
-        // return array_merge(parent::rules(), [
-        //     [['title', 'content'], 'string'],
-        // ]);
     }
 
     public function createPost(): bool
@@ -54,21 +52,7 @@ class CreatePostForm extends BaseModelForm
         return true;
     }
 
-    public function validate($attributeNames = null, $clearErrors = true): bool
-    {
-        if (!parent::validate($attributeNames, $clearErrors)) {
-            return false;
-        }
-        //TODO: use rules "required"
-        if (empty($this->title)) {
-            throw new Error("title can not be null");
-        }
-        return true;
-    }
-
-
-    //TODO: update naming
-    public function getPost()
+    public function serialisePost()
     {
         return $this->post->serialize();
     }

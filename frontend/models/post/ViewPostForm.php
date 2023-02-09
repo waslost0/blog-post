@@ -13,7 +13,6 @@ class ViewPostForm extends BaseModelForm
 
     public function rules(): array
     {
-        //TODO: update formatting
         return
             array_merge(
                 [

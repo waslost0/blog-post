@@ -79,7 +79,7 @@ class PostController extends BaseController
         if (!$model->createPost()) {
             throw new ErrorException(ModelHelper::getFirstError($model));
         }
-        return $model->getPost();
+        return $model->serialisePost();
     }
 
     /**
